@@ -5,7 +5,7 @@ const userRoutes = require('./routes/userRoutes');
 const app = express();
 app.use(cors());
 app.use(express.json());
-
+//latest version
 // Use the user routes with the '/api' prefix
 app.use('/api', userRoutes);
 
