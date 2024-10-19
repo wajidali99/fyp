@@ -1,0 +1,90 @@
+/* Center the questionnaire container on the page */
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f0f0f0;
+    margin: 0;
+    padding: 0;
+  }
+  
+
+  .progress-bar {
+    width: 100%;
+    background-color: #f3f3f3;
+    height: 10px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  
+  .progress {
+    height: 100%;
+    background-color: #4caf50;
+    transition: width 0.3s ease-in-out;
+  }
+
+  
+  /* Styling the question container */
+  .question-container {
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 600px;     /* Fixed width for consistent appearance */
+    height: 500px;    /* Fixed height for uniform box size */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;  /* Space the question text and buttons evenly */
+    box-sizing: border-box;           /* Include padding in width and height calculations */
+    position: relative;               /* Ensure the container stays in the same place */
+  }
+  
+  /* Styling for the question text */
+  h2 {
+    font-size: 24px;   /* Larger font size for readability */
+    margin-bottom: 20px;
+    text-align: left;  /* Left-align the question */
+    line-height: 1.4;  /* Add some spacing between lines */
+  }
+  
+  /* Styling for the question options */
+  .question-options {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;  /* Align options to the top */
+    align-items: flex-start;      /* Left-align the options */
+  }
+  
+  .question-options label {
+    font-size: 18px;              /* Increase the font size for the options */
+    margin-bottom: 10px;          /* Add some spacing between options */
+    display: flex;
+    align-items: center;
+  }
+  
+  /* Navigation buttons at the bottom of the container */
+  .navigation-buttons {
+    display: flex;
+    justify-content: flex-end;
+  }
+  
+  /* Buttons */
+  button {
+    padding: 10px 20px;
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  
+  button:hover {
+    background-color: #45a049;
+  }
+  
+  button:not(:last-child) {
+    margin-right: 10px; /* Add space between Previous and Next buttons */
+  }
+  

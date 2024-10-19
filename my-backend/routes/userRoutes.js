@@ -8,4 +8,15 @@ router.post('/submit_preferences', userController.savePreferences);
 
 // Route to get recommendations
 router.get('/recommendations', userController.getRecommendations);
+
+// Route to retrieve questions
+router.get('/questions', userController.getQuestions);
+
+// Route to submit user preferences
+router.post('/submit_answers', userController.saveUserAnswers);
+
+// Route to get the best matching yoga type
+router.post('/get_all_yoga_types_by_similarity', userController.getAllYogaTypesBySimilarity);
+
+
 module.exports = router;
