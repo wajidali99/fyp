@@ -2,47 +2,49 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 
 const Questionnaire = () => {
-  const [questions, setQuestions] = useState([]);
+  const [primaryGoal, setPrimaryGoal] = useState(null);
+  const [secondaryQuestions, setSecondaryQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [username, setUsername] = useState('');
-  const [isUsernameSubmitted, setIsUsernameSubmitted] = useState(false);
-  const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
+  const [isPrimaryGoalSelected, setIsPrimaryGoalSelected] = useState(false);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const router = useRouter();
 
-  // Fetch questions from the backend
+  // Mock user data for this example
+  const username = "test_user";
+  const email = "test_user@example.com";
+  const password = "securePassword123";
+
+  // Fetch secondary questions from the backend based on the selected primary goal
   useEffect(() => {
-    if (isUsernameSubmitted) {
-      const loadQuestions = async () => {
+    if (isPrimaryGoalSelected && primaryGoal) {
+      const loadSecondaryQuestions = async () => {
+        setIsLoadingQuestions(true);
         try {
-          const response = await fetch('http://localhost:5000/api/questions');
+          const response = await fetch(`http://localhost:5000/api/questions?primaryGoal=${primaryGoal}`);
+          if (!response.ok) throw new Error('Failed to fetch questions');
           const fetchedQuestions = await response.json();
-          setQuestions(fetchedQuestions);
+          setSecondaryQuestions(fetchedQuestions);
         } catch (error) {
-          console.error('Error fetching questions:', error);
+          console.error('Error fetching secondary questions:', error);
         } finally {
           setIsLoadingQuestions(false);
         }
       };
-      loadQuestions();
+      loadSecondaryQuestions();
     }
-  }, [isUsernameSubmitted]);
+  }, [isPrimaryGoalSelected, primaryGoal]);
 
-  // Handle the username form submission
-  const handleUsernameSubmit = (e) => {
-    e.preventDefault();
-    if (username.trim()) {
-      setIsUsernameSubmitted(true);
-      setIsLoadingQuestions(true);
-    } else {
-      alert('Please enter a valid username.');
-    }
+  // Handle primary goal selection
+  const handlePrimaryGoalSelect = (goal) => {
+    setPrimaryGoal(goal);
+    setIsPrimaryGoalSelected(true);
   };
 
   // Handle answer changes
   const handleAnswerChange = (e) => {
-    const questionKey = questions[currentQuestionIndex].questionKey;
+    const questionKey = secondaryQuestions[currentQuestionIndex].question_key;
     setAnswers((prevAnswers) => ({
       ...prevAnswers,
       [questionKey]: e.target.value,
@@ -50,32 +52,31 @@ const Questionnaire = () => {
   };
 
   // Handle form submission
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
+    if (isSubmitting) return;
     setIsSubmitting(true);
 
-    // Construct the user's answers
-    const formattedAnswers = questions.map((question) => ({
-      questionId: question.id,
-      answer: answers[question.questionKey],
-    }));
+    const submissionData = {
+      username,
+      email,
+      password,
+      primaryGoal,
+      answers: secondaryQuestions.map((question) => ({
+        questionId: question.id.toString(),
+        answer: answers[question.question_key] || '',
+      })),
+    };
 
-    try {
-      // Redirect to the result page and pass user's answers as query parameters
-      router.push({
-        pathname: '/result', // The result page where yoga types will be displayed
-        query: answers, // Pass the answers as query parameters
-      });
-    } catch (error) {
-      console.error('Error during form submission:', error);
-      alert('There was an error submitting your answers. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Pass data to Result page
+    router.push({
+      pathname: '/result',
+      query: { data: JSON.stringify(submissionData) },
+    });
   };
 
   // Handle the "Next" button click
   const handleNext = () => {
-    if (currentQuestionIndex < questions.length - 1) {
+    if (currentQuestionIndex < secondaryQuestions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
       handleSubmit(); // Submit the answers if it's the last question
@@ -90,32 +91,28 @@ const Questionnaire = () => {
   };
 
   // Calculate progress percentage
-  const progressPercentage = ((currentQuestionIndex + 1) / questions.length) * 100;
+  const progressPercentage = ((currentQuestionIndex + 1) / secondaryQuestions.length) * 100;
 
-  // If username is not yet submitted, show the username form
-  if (!isUsernameSubmitted) {
+  // If primary goal is not yet selected, show primary goal selection options
+  if (!isPrimaryGoalSelected) {
     return (
-      <div className="username-container">
-        <h2>Please Enter Your Username</h2>
-        <form onSubmit={handleUsernameSubmit}>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="Enter your username"
-          />
-          <button type="submit">Start Questionnaire</button>
-        </form>
+      <div className="primary-goal-container">
+        <h2>Select Your Primary Goal</h2>
+        <div className="primary-goal-options">
+          {['Flexibility', 'Strength', 'Relaxation', 'Mindfulness', 'Back Pain', 'Joint Issues', 'Neck Pain'].map((goal, index) => (
+            <button key={index} onClick={() => handlePrimaryGoalSelect(goal)}>{goal}</button>
+          ))}
+        </div>
       </div>
     );
   }
 
-  // Show a loading state while questions are being fetched
+  // Show a loading state while secondary questions are being fetched
   if (isLoadingQuestions) {
     return <div>Loading questions...</div>;
   }
 
-  if (!questions.length) return <div>No questions found.</div>;
+  if (!secondaryQuestions.length) return <div>No questions found.</div>;
 
   return (
     <div className="question-container">
@@ -125,15 +122,15 @@ const Questionnaire = () => {
       </div>
 
       {/* Question */}
-      <h2>Question {currentQuestionIndex + 1}: {questions[currentQuestionIndex].question}</h2>
+      <h2>Question {currentQuestionIndex + 1}: {secondaryQuestions[currentQuestionIndex].question_text}</h2>
       <div className="question-options">
-        {questions[currentQuestionIndex].options.map((option, index) => (
+        {secondaryQuestions[currentQuestionIndex].options.map((option, index) => (
           <label key={index}>
             <input
               type="radio"
-              name={questions[currentQuestionIndex].questionKey}
+              name={secondaryQuestions[currentQuestionIndex].question_key}
               value={option}
-              checked={answers[questions[currentQuestionIndex].questionKey] === option}
+              checked={answers[secondaryQuestions[currentQuestionIndex].question_key] === option}
               onChange={handleAnswerChange}
             />
             {option}
@@ -147,7 +144,7 @@ const Questionnaire = () => {
           <button onClick={handlePrevious} disabled={isSubmitting}>Previous</button>
         )}
         <button onClick={handleNext} disabled={isSubmitting}>
-          {currentQuestionIndex === questions.length - 1 ? 'Submit' : 'Next'}
+          {currentQuestionIndex === secondaryQuestions.length - 1 ? 'Submit' : 'Next'}
         </button>
       </div>
     </div>

@@ -10,10 +10,13 @@ router.post('/submit_preferences', userController.savePreferences);
 router.get('/recommendations', userController.getRecommendations);
 
 // Route to retrieve questions
-router.get('/questions', userController.getQuestions);
+router.get('/questions', userController.getQuestionsByPrimaryGoal);
 
-// Route to submit user preferences
-router.post('/submit_answers', userController.saveUserAnswers);
+// // Route to submit user preferences
+// router.post('/submit_answers', userController.saveUserAnswers);
+
+router.post('/submit_answers', userController.submitAnswers);
+
 
 // Route to get the best matching yoga type
 router.post('/get_all_yoga_types_by_similarity', userController.getAllYogaTypesBySimilarity);

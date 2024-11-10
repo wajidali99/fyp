@@ -29,9 +29,45 @@ const getRecommendations = (userId) => {
         if (err) return reject(err);
         resolve(yogaResults);
      });
+
     });
   });
 };
+
+
+const getQuestionsByPrimaryGoal = (primaryGoal) => {
+  return new Promise((resolve, reject) => {
+    const sql = `
+      SELECT * FROM questions
+      WHERE primary_goal = ?
+    `;
+
+    db.query(sql, [primaryGoal], (err, results) => {
+      if (err) {
+        console.error("Database query error:", err); // Log error if there’s an issue with the query
+        return reject(err);
+      }
+
+      console.log("Raw Results from Database:", results); // Log the raw results from the database
+
+      // Parse options as JSON arrays
+      const questionsWithParsedOptions = results.map((question) => {
+        const parsedOptions = question.options ? JSON.parse(question.options) : [];
+        console.log(`Parsed Options for Question ID ${question.id}:`, parsedOptions); // Log parsed options for each question
+
+        return {
+          ...question,
+          options: parsedOptions, // Set parsed options in the question object
+        };
+      });
+
+      console.log("Questions with Parsed Options:", questionsWithParsedOptions); // Log the final questions with parsed options
+      resolve(questionsWithParsedOptions);
+    });
+  });
+};
+
+
 
 
 // Function to retrieve questions from the database
@@ -53,27 +89,6 @@ const getQuestions = () => {
   });
 };
 
-
-const saveUserAnswers = (username, answers, callback) => {
-  if (!answers || !Array.isArray(answers)) {
-    return callback(new Error('Invalid answers array'));
-  }
-
-  const answerPromises = answers.map(answer => {
-    const { questionId, answer: userAnswer } = answer;
-    const sql = `INSERT INTO user_answers (username, question_id, answer) VALUES (?, ?, ?)`;
-    return new Promise((resolve, reject) => {
-      db.query(sql, [username, questionId, userAnswer], (err, result) => {
-        if (err) return reject(err);
-        resolve(result);
-      });
-    });
-  });
-
-  Promise.all(answerPromises)
-    .then(() => callback(null, { success: true }))
-    .catch(callback);
-};
 
 
 
@@ -115,7 +130,87 @@ const getAllYogaTypesBySimilarity = (userAnswers) => {
 
 
 
+// Helper function to wrap db.query in a Promise
+const queryAsync = (query, values = []) => {
+  return new Promise((resolve, reject) => {
+    db.query(query, values, (error, results) => {
+      if (error) return reject(error);
+      resolve(results);
+    });
+  });
+};
 
+// Store the user's answers in the database
+const saveUserAnswers = async (username, email, password, primaryGoal, answers) => {
+  try {
+
+    console.log('username ', username)
+    // Insert the user data
+    const userInsertQuery = `INSERT INTO users (username, email, password, primary_goal) VALUES (?, ?, ?, ?)`;
+    const userResult = await queryAsync(userInsertQuery, [username, email, password, primaryGoal]);
+    const userId = userResult.insertId;
+
+    // Insert each answer individually
+    const answerInsertQuery = `INSERT INTO user_answers (user_id, question_id, answer) VALUES (?, ?, ?)`;
+
+    for (const answer of answers) {
+      await queryAsync(answerInsertQuery, [userId, answer.questionId, answer.answer]);
+    }
+  } catch (error) {
+    console.error('Error storing user answers:', error);
+    throw error;
+  }
+};
+
+
+
+const getBestMatchingYoga = async (primaryGoal, answers) => {
+  try {
+    console.log("Primary Goal:", primaryGoal);
+    console.log("User Answers:", answers);
+
+    // Fetch yoga options with the same primary benefit as the user's primary goal
+    const yogaQuery = `SELECT * FROM yoga WHERE primary_benefit = ?`;
+    const yogaOptions = await queryAsync(yogaQuery, [primaryGoal]);
+
+    console.log("Yoga Options:", yogaOptions);
+
+    let bestMatch = null;
+    let maxScore = 0;
+
+    yogaOptions.forEach((yoga) => {
+      let score = 0;
+
+      // Compare each answer against the corresponding yoga attribute
+      answers.forEach((answerObj) => {
+        const { questionId, answer } = answerObj;
+
+        if (
+          ( yoga.flexibility_rate === answer) ||
+          ( yoga.stretching === answer) ||
+          ( yoga.practice_days === answer) ||
+          ( yoga.focus_area === answer) ||
+          ( yoga.pose_comfort === answer)
+        ) {
+          score += 1;
+        }
+      });
+
+      // Update the best match if the current yoga has a higher score
+      if (score > maxScore) {
+        console.log(score);
+        maxScore = score;
+        bestMatch = yoga;
+      }
+    });
+
+    console.log("Best Match Yoga:", bestMatch);
+    return bestMatch;
+  } catch (error) {
+    console.error("Error fetching best matching yoga:", error);
+    throw error;
+  }
+};
 
 
 module.exports = {
@@ -124,4 +219,9 @@ module.exports = {
   savePreferences,
   getRecommendations,
   saveUserAnswers,
+  getQuestionsByPrimaryGoal,
+  getBestMatchingYoga,
+
+
+  
 };
